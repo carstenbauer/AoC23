@@ -37,7 +37,7 @@ function _count_arrangements(conf, nums; memory)
 
 	if c in ('?', '#') # can start now?
 		cond1 = !contains(@view(conf[1:n]), '.') # not crossing dots?
-		cond2 = nchars == n || conf[n+1] != '#'  # not ending in front of '#'?
+		cond2 = (n+1 <= nchars && conf[n+1] != '#') || nchars == n  # not ending in front of '#'?
 		if cond1 && cond2
 			cnt += count_arrangements(@view(conf[begin+n+1:end]), nrest; memory)
 		end
@@ -88,13 +88,15 @@ let
 	s = sum(records) do r
 		count_arrangements(r.conf, r.nums)
 	end
-	println("Answer (Part 1): ", s) # 7670
+	println("Answer (Part 1): ", s)
 
 	records = parse_input("12.txt")
+	memory = Dict()
 	s = sum(records) do r
 		rr = unfold(r)
-		count_arrangements(rr.conf, rr.nums)
+		count_arrangements(rr.conf, rr.nums; memory)
 	end
+	# @show length(memory)
 	println("Answer (Part 2): ", s)
 end
 
