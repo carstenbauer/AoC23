@@ -13,70 +13,74 @@ using BenchmarkTools
 # ╔═╡ 6a6aa804-9a55-11ee-3746-b31295a027e0
 md"# Day 14"
 
-# ╔═╡ 3680a70a-41e3-4dcf-b510-35a9bc85a3a8
-begin
-	abstract type Direction end
-	struct North <: Direction end
-	struct West <: Direction end
-	struct South <: Direction end
-	struct East <: Direction end
-end
-
-# ╔═╡ 01386299-8e93-4cd0-b525-09c6282a6e7a
-function update!(platform, ::T) where {T<:Direction}
-	if T == North || T == South
-		d = 2
-		flip = T == South
-	elseif T == West || T == East
-		d = 1
-		flip = T == East
-	end
-	load = 0
-	n = size(platform, d == 2 ? 1 : 2)
-	for slice in eachslice(platform; dims=d)
-		start_tmp = 1
-		cnt_tmp = 0
-		for i in eachindex(slice)
-			slice[i] == 'O' && (cnt_tmp += 1)
-			if slice[i] == '#' || i == n
-				start = start_tmp
-				cnt = cnt_tmp
-				start_tmp = i+1
-				cnt_tmp = 0
-				
-				stop = i == n ? i : i-1
-				stop < start && continue
-				cnt == 0 && continue
-				# @show start, stop
-				load += sum(n - start + 1 - j for j in 0:cnt-1)
-				if !flip
-					slice[start:(start+cnt-1)] .= 'O'
-					slice[(start+cnt):stop] .= '.'
-				else
-					slice[stop:-1:(stop-cnt+1)] .= 'O'
-					slice[(stop-cnt):-1:start] .= '.'
-				end
-			end
+# ╔═╡ 71cd39a3-98d7-495b-b401-e19d59d37a06
+function update!(platform)
+	nr = size(platform, 1)
+	for (c, col) in enumerate(eachcol(platform))
+		hs = findall(==('#'), col)
+		pushfirst!(hs, 0) # put cube rocks at 0th and nr+1th row to mark bounds
+		push!(hs, nr+1)
+		nh = length(hs)
+		for i in eachindex(hs)
+			start = i > 0 ? hs[i]+1 : 1
+			stop  = i < nh ? hs[i+1]-1 : nh
+			stop < start && continue
+			no = count(==('O'), @view(col[start:stop]))
+			no == 0 && continue
+			col[start:(start+no-1)] .= 'O'
+			col[(start+no):stop] .= '.'
 		end
 	end
-	return load
+	return platform
 end
 
 # ╔═╡ 8d4d96f3-c79c-4455-87dc-a2deb9d1f2d9
-function cycle!(platform)
-	update!(platform, North())
-	update!(platform, West())
-	update!(platform, South())
-	update!(platform, East())
+function cycle(platform)
+	p = copy(platform)
+	# North
+	update!(p)
+	# West
+	p = rotr90(p)
+	update!(p)
+	# South
+	p = rotr90(p)
+	update!(p)
+	# East
+	p = rotr90(p)
+	update!(p)
+	# back to North
+	p = rotr90(p)
+	return p
+end
+
+# ╔═╡ 277899e8-537f-47d4-a228-39990d6cbdf9
+function compute_north_load(platform)
+	n = size(platform, 1)
+	load_values = reverse(1:n)
+	return mapreduce(+, enumerate(eachrow(platform))) do (i, row)
+		count(==('O'), row) * load_values[i]
+	end
 end
 
 # ╔═╡ a5103c7f-6b55-45f8-a96a-f1b6e73cc05c
-function solution_part2(platform; N=1_000_000_000)
-	p = copy(platform)
-	local load
-	for _ in 1:N
-		load = cycle!(p)
+function solution_part2(p; N=1_000_000_000)
+	seen        = Tuple{Matrix{Char}, Int}[]
+	cycle_start = nothing
+	cycle_len   = nothing
+	i = 0
+	while i < N
+		p = cycle(p)
+		i += 1
+		cycle_start = findfirst(x -> x[1] == p, seen)
+		if !isnothing(cycle_start)
+			cycle_len = i - cycle_start
+			break
+		end
+		push!(seen, (p, compute_north_load(p)))
 	end
+	@assert !isnothing(cycle_start)
+	cycle_i_final = mod1(N - i, cycle_len)
+	load = seen[cycle_start + cycle_i_final][2]
 	return load
 end
 
@@ -123,28 +127,15 @@ O.#..O.#.#
 	platform = parse_input(inp)
 	@testset "day14" begin
 		@test solution_part1(platform) == 136
+		@test solution_part2(platform) == 64
 	end
-
-	p = copy(platform)
-	# update!(p, :north), p
-	# p2 = copy(platform)
-	# update!(p2, :south)
-	
-	# @btime update!($p, $(North())) samples = 5 evals = 3;
-	# @btime cycle!($p) samples = 5 evals = 3;
-	cycle!(p)
-	# cycle!(p)
-	platform, p
-	# solution_part2(platform)
 end
 
 # ╔═╡ 5e1627ed-b220-4aac-84b2-bcb1c51750df
 let
 	platform = parse_input("14.txt")
 	println("Answer (Part 1): ", solution_part1(platform)) # 105249
-	# p = copy(platform)
-	# update!(p, :north)
-	# println("Answer (Part 2): ", solution_part2(platform)) # 105249
+	println("Answer (Part 2): ", solution_part2(platform)) # 88680
 end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -377,11 +368,11 @@ version = "17.4.0+2"
 # ╟─6a6aa804-9a55-11ee-3746-b31295a027e0
 # ╠═c870982e-9bc1-462e-ab56-989f3388a06b
 # ╠═0567c71c-ac17-4981-9ca8-6e70fad9b270
-# ╠═9119bb64-d888-45f4-b5a2-b8780231188d
-# ╠═a5103c7f-6b55-45f8-a96a-f1b6e73cc05c
-# ╠═3680a70a-41e3-4dcf-b510-35a9bc85a3a8
-# ╠═01386299-8e93-4cd0-b525-09c6282a6e7a
+# ╟─9119bb64-d888-45f4-b5a2-b8780231188d
 # ╠═8d4d96f3-c79c-4455-87dc-a2deb9d1f2d9
+# ╠═71cd39a3-98d7-495b-b401-e19d59d37a06
+# ╠═277899e8-537f-47d4-a228-39990d6cbdf9
+# ╠═a5103c7f-6b55-45f8-a96a-f1b6e73cc05c
 # ╠═3fd7cee4-604b-4540-84a3-8c4fb0083ff7
 # ╠═bb8d06cf-99c4-4f6e-99d1-cd143f3600a5
 # ╠═5e1627ed-b220-4aac-84b2-bcb1c51750df
