@@ -31,10 +31,9 @@ const MOVES = Dict(
     (DOWN, '-') => (LEFT, RIGHT),
 )
 
-function count_energized(grid)
+function count_energized(grid; start=(CartesianIndex(1, 1), RIGHT))
     @assert size(grid, 1) == size(grid, 2)
     n = size(grid, 1)
-    start = (CartesianIndex(1, 1), RIGHT)
     todo = [start]
     log = typeof(start)[]
 
@@ -59,6 +58,20 @@ function count_energized(grid)
     return length(unique(getindex.(log, 1)))
 end
 
+function solution_part2(grid)
+    @assert allequal(size(grid))
+    n = size(grid, 1)
+    cnt_1 = maximum(1:n) do i
+        max(count_energized(grid; start=(CartesianIndex(i, 1), RIGHT)),
+            count_energized(grid; start=(CartesianIndex(i, n), LEFT)))
+    end
+    cnt_2 = maximum(1:n) do i
+        max(count_energized(grid; start=(CartesianIndex(1, i), DOWN)),
+            count_energized(grid; start=(CartesianIndex(n, i), UP)))
+    end
+    return max(cnt_1, cnt_2)
+end
+
 inp = raw""".|...\....
 |.-.\.....
 .....|-...
@@ -74,3 +87,4 @@ cnt = count_energized(grid_ex)
 
 grid = parse_input("16.txt")
 println("Answer (Part 1): ", count_energized(grid))
+println("Answer (Part 2): ", solution_part2(grid))
