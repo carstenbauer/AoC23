@@ -28,19 +28,72 @@ function hash_alg(str)
 	return val
 end
 
+# ╔═╡ 9f60df4d-05c6-4e81-809b-a325b5a088ce
+begin
+	struct Lens
+		label::String
+		focal_length::Int
+	end
+	
+	get_label(l::Lens) = l.label
+	get_focal_length(l::Lens) = l.focal_length
+end
+
+# ╔═╡ dc8b4b3a-4a28-4374-a4f7-96f94cb73b7a
+function step!(boxes, str)
+	i = findfirst(c -> c == '=' || c == '-', str)
+	label = str[1:i-1]
+	op = str[i]
+	box = boxes[hash_alg(label)+1]
+	if op == '-'
+		j = findfirst(l->get_label(l) == label, box)
+		if !isnothing(j)
+			deleteat!(box, j)
+		end
+	else
+		focal_length = parse(Int, str[i+1:end])
+		l = Lens(label, focal_length)
+		j = findfirst(l->get_label(l) == label, box)
+		if !isnothing(j)
+			box[j] = l
+		else
+			push!(box, l)
+		end
+	end
+	return nothing
+end
+
+# ╔═╡ 0ea5e7c1-b1d1-4535-99fe-81dd689ebdfa
+function solution_part2(steps)
+	boxes = [Lens[] for _ in 0:255]
+	for s in steps
+		step!(boxes, s)
+	end
+	focusing_power = 0
+	for (b, box) in enumerate(boxes)
+		for (l, lens) in enumerate(box)
+			focusing_power += b * l * get_focal_length(lens)
+		end
+	end
+	return focusing_power
+end
+
 # ╔═╡ 71ff3e4c-f2f4-476f-80d2-6744635abce8
 let
 	inp = "rn=1,cm-,qp=3,cm=2,qp-,pc=4,ot=9,ab=5,pc-,pc=6,ot=7"
+	steps = parse_input(inp)
 	@testset "day15" begin
 		@test hash_alg("HASH") == 52
-		@test sum(hash_alg, parse_input(inp)) == 1320
+		@test sum(hash_alg, steps) == 1320
+		@test solution_part2(steps) == 145
 	end
 end
 
 # ╔═╡ c8218fec-d555-4303-97c9-48b703e4ccbc
 let
-	inp = parse_input("15.txt")
-	println("Answer (Part 1): ", sum(hash_alg, inp))
+	steps = parse_input("15.txt")
+	println("Answer (Part 1): ", sum(hash_alg, steps))
+	println("Answer (Part 2): ", solution_part2(steps))
 end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -93,6 +146,9 @@ uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 # ╠═71ff3e4c-f2f4-476f-80d2-6744635abce8
 # ╠═12f77dfe-57d9-48e3-938b-df9a9897aed7
 # ╠═6aa088e0-683e-4848-823d-789b70dd9636
+# ╠═9f60df4d-05c6-4e81-809b-a325b5a088ce
+# ╠═0ea5e7c1-b1d1-4535-99fe-81dd689ebdfa
+# ╠═dc8b4b3a-4a28-4374-a4f7-96f94cb73b7a
 # ╠═c8218fec-d555-4303-97c9-48b703e4ccbc
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
