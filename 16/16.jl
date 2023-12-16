@@ -32,8 +32,6 @@ const MOVES = Dict(
 )
 
 function count_energized(grid; start=(CartesianIndex(1, 1), RIGHT))
-    @assert size(grid, 1) == size(grid, 2)
-    n = size(grid, 1)
     todo = [start]
     log = typeof(start)[]
 
@@ -50,7 +48,7 @@ function count_energized(grid; start=(CartesianIndex(1, 1), RIGHT))
         isnothing(newdirs) && error("Unknown direction/char combo!")
         for d in newdirs
             newpos = pos + d
-            if 1 <= newpos[1] <= n && 1 <= newpos[2] <= n
+            if checkbounds(Bool, grid, newpos)
                 push!(todo, (newpos, d))
             end
         end
