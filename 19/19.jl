@@ -11,20 +11,16 @@ struct Workflow
     rules::Vector{Function}
 end
 
-function process_part(p, ws)
-    w = ws["in"]
-    while true
-        for r in w.rules
-            (b, next_workflow) = r(p)
-            if b
-                if next_workflow == "A"
-                    return true
-                elseif next_workflow == "R"
-                    return false
-                else
-                    w = ws[next_workflow]
-                    break
-                end
+function process_part(p, w, ws)
+    for r in w.rules
+        (b, nw) = r(p)
+        if b
+            if nw == "A"
+                return true
+            elseif nw == "R"
+                return false
+            else
+                return process_part(p, ws[nw], ws)
             end
         end
     end
@@ -49,9 +45,7 @@ end
 function parse_workflow(wstr)
     name, rest = split(wstr, '{')
     rstrs = split(@view(rest[1:end-1]), ',')
-    # rules = Tuple(parse_rule(rstr) for rstr in @view(rstrs[1:end-1]))
     rules = [parse_rule(rstr) for rstr in rstrs]
-    # return Workflow(string(name), rules, string(last(rstrs)))
     return Workflow(string(name), rules)
 end
 
@@ -76,6 +70,15 @@ function parse_input(inp)
     return ws, parts
 end
 
+# function part2(ws)
+#     accepted = 0
+#     for x in 1:4000, m in 1:4000, a in 1:4000, s in 1:4000
+#         p = Part(x,m,a,s)
+#         accepted += process_part(p, ws)
+#     end
+#     return accepted
+# end
+
 # ---------------
 let
     inp_ex = """px{a<2006:qkq,m>2090:A,rfg}
@@ -97,13 +100,13 @@ let
     {x=2127,m=1623,a=2188,s=1013}"""
 
     workflows, parts = parse_input(inp_ex)
-    mask = process_part.(parts, Ref(workflows))
+    mask = process_part.(parts, Ref(workflows["in"]), Ref(workflows))
     mapreduce(sum, +, @view(parts[mask])) # 19114
 end
 
 let
     workflows, parts = parse_input(read(joinpath(@__DIR__, "19.txt"), String))
-    mask = process_part.(parts, Ref(workflows))
+    mask = process_part.(parts, Ref(workflows["in"]), Ref(workflows))
     total_rating = mapreduce(sum, +, @view(parts[mask]))
-    println("Answer (Part 1): ", total_rating)
+    println("Answer (Part 1): ", total_rating) # 446935
 end
