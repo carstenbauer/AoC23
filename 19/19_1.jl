@@ -70,15 +70,6 @@ function parse_input(inp)
     return ws, parts
 end
 
-# function part2(ws)
-#     accepted = 0
-#     for x in 1:4000, m in 1:4000, a in 1:4000, s in 1:4000
-#         p = Part(x,m,a,s)
-#         accepted += process_part(p, ws)
-#     end
-#     return accepted
-# end
-
 # ---------------
 let
     inp_ex = """px{a<2006:qkq,m>2090:A,rfg}
@@ -102,6 +93,8 @@ let
     workflows, parts = parse_input(inp_ex)
     mask = process_part.(parts, Ref(workflows["in"]), Ref(workflows))
     mapreduce(sum, +, @view(parts[mask])) # 19114
+
+    ranges = Dict(k => (1, 4000) for k in (:x, :m, :a, :s))
 end
 
 let
