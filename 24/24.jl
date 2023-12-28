@@ -4,7 +4,7 @@ inp = """19, 13, 30 @ -2,  1, -2
 12, 31, 28 @ -1, -2, -1
 20, 19, 15 @  1, -5, -3"""
 
-struct Hailstone{T<:Integer}
+struct Hailstone{T}
     x::T
     y::T
     z::T
@@ -64,3 +64,14 @@ end
 
 # println("Answer (Part 1): ", count_intersects(hailstones; minlim=7, maxlim=27))
 println("Answer (Part 1): ", count_intersects(hailstones)) # 18651
+
+using SymPyPythonCall
+@syms xr, yr, zr, vxr, vyr, vzr
+
+eqs = Sym[]
+for h in hailstones
+    push!(eqs, (xr - h.x) * (h.vy - vyr) - (yr - h.y) * (h.vx - vxr))
+    push!(eqs, (yr - h.y) * (h.vz - vzr) - (zr - h.z) * (h.vy - vyr))
+end
+sol = solve(eqs)
+println("Answer (Part 2): ", sum(sol[1][k] for k in (xr, yr, zr)))
